@@ -36,15 +36,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     function (notifierObject: any, options: any, event: any) {
       // Triggers if `wait: true` and user clicks notification
       console.log(notifierObject, options, event);
-      open('http://localhost:3000');
+      open(req.body.url);
       return;
     }
   );
-
-  notifier.on('timeout', function (notifierObject: any, options: any) {
-    // Triggers if `wait: true` and notification closes
-    console.log(notifierObject, options);
-  });
   res.status(200);
   return;
 }

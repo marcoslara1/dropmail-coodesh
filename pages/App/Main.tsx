@@ -25,6 +25,7 @@ type MailData = {
 type Notification = {
   headerSubject: string | null;
   text: string | null;
+  url: string;
 };
 
 export default function Main() {
@@ -59,7 +60,7 @@ export default function Main() {
 
     timerInterval = setInterval(() => {
       if (timeLeft <= 0) {
-        // handleRefresh();
+        handleRefresh();
         clearInterval(timerInterval);
         startCountdown(15);
       } else {
@@ -89,6 +90,24 @@ export default function Main() {
           console.log(error);
           return;
         }
+      }
+    } else {
+      setMobile(true);
+    }
+  };
+
+  const enableNotificatinons = () => {
+    if (
+      navigator.userAgent.match(/Macintosh/i) ||
+      navigator.userAgent.match(/Windows/i)
+    ) {
+      if (!Notification) {
+        alert('Notificações não disponíveis.');
+        return;
+      }
+      if (Notification.permission !== 'granted') {
+        Notification.requestPermission();
+        return;
       }
     } else {
       setMobile(true);
@@ -130,20 +149,31 @@ export default function Main() {
         }`,
           };
 
-          await axios.post(endpoint, query).then((response) => {
-            if (response.status != 200) {
-              alert(
-                'Um erro ocorreu ao buscar seus emails. Talvez você tenha solicitado muitas requisições. Se o problema persistir por favor entre em contato!'
-              );
-              setLoaded(true);
-              return;
+          const response = await axios.post(endpoint, query);
+          if (response.status != 200) {
+            alert(
+              'Um erro ocorreu ao buscar seus emails. Talvez você tenha solicitado muitas requisições. Se o problema persistir por favor entre em contato!'
+            );
+            setLoaded(true);
+            return;
+          }
+          if (response.data && response.data.data.session.mails.length > 0) {
+            const currentLength = mailList.current?.length;
+            mailList.current = response.data.data.session.mails;
+            if (
+              document.hidden &&
+              currentLength != mailList.current?.length &&
+              mailList.current != undefined
+            ) {
+              handleNotificatinons({
+                text: mailList.current[0].text,
+                headerSubject: mailList.current[0].headerSubject,
+                url: location.host,
+              });
             }
-            if (response.data && response.data.data.session.mails.length > 0) {
-              mailList.current = response.data.data.session.mails;
-              setLoaded(true);
-              return;
-            }
-          });
+          }
+          setLoaded(true);
+          return;
         } catch (error) {
           console.log(error);
           alert(
@@ -176,7 +206,7 @@ export default function Main() {
         setTimeout(() => {
           sessionRef.current = session.id;
           emailRef.current = session.address;
-          // handleRefresh();
+          handleRefresh();
         }, 100);
         return;
       }
@@ -223,11 +253,11 @@ export default function Main() {
   }, [currentDate, endpoint, handleRefresh]);
 
   useEffect(() => {
-    if (!loaded) generateEmail();
-  }, [loaded]);
+    generateEmail();
+  }, []);
 
   useEffect(() => {
-    startCountdown(15);
+    if (!loaded) startCountdown(15);
   }, []);
 
   useEffect(() => {
@@ -347,10 +377,7 @@ export default function Main() {
                       fill="currentColor"
                       className="w-5 h-5 ml-2 cursor-pointer"
                       onClick={() => {
-                        handleNotificatinons({
-                          headerSubject: 'Teste',
-                          text: 'test',
-                        });
+                        enableNotificatinons();
                       }}
                     >
                       <path d="M5.85 3.5a.75.75 0 00-1.117-1 9.719 9.719 0 00-2.348 4.876.75.75 0 001.479.248A8.219 8.219 0 015.85 3.5zM19.267 2.5a.75.75 0 10-1.118 1 8.22 8.22 0 011.987 4.124.75.75 0 001.48-.248A9.72 9.72 0 0019.266 2.5z" />
@@ -454,7 +481,7 @@ export default function Main() {
                       <span className="text-black text-2xl">
                         {mailList.current[mailSelected].headerSubject}
                       </span>
-                      <p className="text-black text-xl w-[90%] text-ellipsis overflow-x-hidden hover:overflow-x-visible">
+                      <p className="text-black text-xl w-[90%] whitespace-pre-line text-ellipsis overflow-x-hidden hover:overflow-x-visible">
                         {mailList.current[mailSelected].text}
                       </p>
                     </div>

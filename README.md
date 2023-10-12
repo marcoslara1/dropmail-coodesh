@@ -126,5 +126,5 @@ pnpm prod
 
 Marcos Lara
 
-Email: marcos.lara1@icloud.com
-LinkedIn:
+- [Email](marcos.lara1@icloud.com)
+- [LinkedIn](https://www.linkedin.com/in/marcos-lara-933303168/)

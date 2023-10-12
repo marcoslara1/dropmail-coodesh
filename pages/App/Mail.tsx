@@ -8,19 +8,19 @@ type ModalProps = {
 };
 
 type MailData = {
-  toAddrOrig: string | null;
-  toAddr: string | null;
-  text: string | null;
-  receivedAt: string | null;
-  rawSize: number | null;
-  raw: string | null;
-  id: string | null;
-  html: string | null;
-  headerSubject: string | null;
-  headerFrom: string | null;
-  fromAddr: string | null;
-  downloadUrl: string | null;
-  decodeStatus: string | null;
+  toAddrOrig: string | null | undefined;
+  toAddr: string | null | undefined;
+  text: string | null | undefined;
+  receivedAt: string | null | undefined;
+  rawSize: number | null | undefined;
+  raw: string | null | undefined;
+  id: string | null | undefined;
+  html: string | null | undefined;
+  headerSubject: string | null | undefined;
+  headerFrom: string | null | undefined;
+  fromAddr: string | null | undefined;
+  downloadUrl: string | null | undefined;
+  decodeStatus: string | null | undefined;
 };
 
 export default function MyModal({ hideMail, showMail, mailData }: ModalProps) {
@@ -30,7 +30,7 @@ export default function MyModal({ hideMail, showMail, mailData }: ModalProps) {
 
   return (
     <>
-      <Transition appear show={showMail} as={Fragment}>
+      <Transition appear show={showMail ? true : false} as={Fragment}>
         <Dialog as="div" className="relative z-10" onClose={handleClose}>
           <Transition.Child
             as={Fragment}
@@ -60,10 +60,16 @@ export default function MyModal({ hideMail, showMail, mailData }: ModalProps) {
                     as="h3"
                     className="text-lg font-medium leading-6 text-gray-900"
                   >
-                    {mailData.headerSubject}
+                    {mailData?.headerSubject ? (
+                      mailData?.headerSubject
+                    ) : (
+                      <>{`<SEM TITULO>`}</>
+                    )}
                   </Dialog.Title>
                   <div className="mt-2">
-                    <p className="text-sm text-gray-500">{mailData.text}</p>
+                    <p className="text-sm text-gray-500">
+                      {mailData?.text ? mailData?.text : <>{`<SEM CORPO>`}</>}
+                    </p>
                   </div>
 
                   <div className="mt-4">
