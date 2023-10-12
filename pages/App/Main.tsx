@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Loading from './Loading';
 import Mail from './Mail';
 import axios from 'axios';
-import Router from 'next/router';
+import Logo from '@/public/logo.png';
 
 let timerInterval: NodeJS.Timeout;
 
@@ -24,9 +24,8 @@ type MailData = {
 };
 
 type Notification = {
-  headerSubject: string | null;
-  text: string | null;
-  url: string;
+  headerSubject: string;
+  text: string;
 };
 
 export default function Main() {
@@ -84,12 +83,11 @@ export default function Main() {
         Notification.requestPermission();
         return;
       } else {
-        try {
-          await axios.post('/api/notifications', data);
-          return;
-        } catch (error) {
-          return;
-        }
+        const text = data.text;
+        const notification = new Notification(data.headerSubject, {
+          body: text,
+          silent: false,
+        });
       }
     } else {
       setMobile(true);
@@ -166,9 +164,8 @@ export default function Main() {
               mailList.current != undefined
             ) {
               handleNotificatinons({
-                text: mailList.current[0].text,
-                headerSubject: mailList.current[0].headerSubject,
-                url: location.host,
+                text: mailList.current[0].text!,
+                headerSubject: mailList.current[0].headerSubject!,
               });
             }
           }
@@ -219,7 +216,6 @@ export default function Main() {
         alert(
           'Ocorreu um erro! Talvez você tenha solicitado muitas requisições. Tente recarregar a pagina!'
         );
-        console.log('error');
         return;
       } else {
         if (response.data.data) {
@@ -375,6 +371,10 @@ export default function Main() {
                       className="w-5 h-5 ml-2 cursor-pointer"
                       onClick={() => {
                         enableNotificatinons();
+                        handleNotificatinons({
+                          headerSubject: 'Teste',
+                          text: 'testeee',
+                        });
                       }}
                     >
                       <path d="M5.85 3.5a.75.75 0 00-1.117-1 9.719 9.719 0 00-2.348 4.876.75.75 0 001.479.248A8.219 8.219 0 015.85 3.5zM19.267 2.5a.75.75 0 10-1.118 1 8.22 8.22 0 011.987 4.124.75.75 0 001.48-.248A9.72 9.72 0 0019.266 2.5z" />
