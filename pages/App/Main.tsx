@@ -4,12 +4,30 @@ import Loading from './Loading';
 import { Dialog } from '@headlessui/react';
 import Mail from './Mail';
 import axios from 'axios';
+import path from 'path';
+import notifier from 'node-notifier';
 
 let timerInterval: NodeJS.Timeout;
 
 type MailData = {
-  title: string;
-  content: string;
+  toAddrOrig: string | null;
+  toAddr: string | null;
+  text: string | null;
+  receivedAt: string | null;
+  rawSize: number | null;
+  raw: string | null;
+  id: string | null;
+  html: string | null;
+  headerSubject: string | null;
+  headerFrom: string | null;
+  fromAddr: string | null;
+  downloadUrl: string | null;
+  decodeStatus: string | null;
+};
+
+type Notification = {
+  headerSubject: string | null;
+  text: string | null;
 };
 
 export const revalidate = 600;
@@ -22,10 +40,11 @@ export default function Main() {
   const [enableModal, setEnableModal] = useState(false);
   const [disableClick, setDisableClick] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [mailSelected, setMailSelected] = useState(0);
 
   const sessionRef = useRef<string | null>();
   const emailRef = useRef<string | null>();
-  const mailList = useRef<[{}]>();
+  const mailList = useRef<[MailData]>();
 
   const currentDate = new Date();
 
@@ -54,6 +73,23 @@ export default function Main() {
     }, 1000);
   };
 
+  const handleNotificatinons = async (data: Notification) => {
+    if (!Notification) {
+      console.log('Notificações não disponíveis.');
+      return;
+    }
+    if (Notification.permission !== 'granted') {
+      Notification.requestPermission();
+    } else {
+      try {
+        await axios.post('/api/notifications', data);
+      } catch (error) {
+        console.log(error);
+        return;
+      }
+    }
+  };
+
   const handleRefresh = useCallback(async () => {
     const session = {
       id: localStorage.getItem('session'),
@@ -61,15 +97,17 @@ export default function Main() {
       address: localStorage.getItem('address'),
     };
     if (
-      session.id != null &&
-      session.address != null &&
-      session.expire != null
+      (session.id != null || session.id != '') &&
+      (session.address != null || session.address != '') &&
+      (session.expire != null || session.expire != '')
     ) {
-      console.log(session);
-      const expire = new Date(session.expire);
+      const expire = new Date(session.expire!);
       if (expire < currentDate) {
         alert('Sua sessao expirou! Um novo email sera gerado!');
-        localStorage.clear();
+        localStorage.setItem('session', '');
+        localStorage.setItem('expire', '');
+        localStorage.setItem('address', '');
+        location.reload();
       } else {
         try {
           const query = {
@@ -88,23 +126,25 @@ export default function Main() {
           };
 
           await axios.post(endpoint, query).then((response) => {
-            console.log(response.data);
             if (response.status != 200) {
               alert(
-                'Um erro ocorreu ao buscar seus emails. Se o problema persistir por favor entre em contato!'
+                'Um erro ocorreu ao buscar seus emails. Talvez você tenha solicitado muitas requisições. Se o problema persistir por favor entre em contato!'
               );
+              setLoaded(true);
               return;
             }
             if (response.data && response.data.data.session.mails.length > 0) {
-              for (let i = 0; i < response.data.data.session.mails.legth; i++) {
-                mailList.current?.push(response.data.data.session.mails[i]);
-              }
+              mailList.current = response.data.data.session.mails;
+              setLoaded(true);
               return;
             }
           });
         } catch (error) {
           console.log(error);
-          alert('Um erro ocorreu ao localizar seus emails');
+          alert(
+            'Um erro ocorreu ao localizar seus emails! Talvez você tenha solicitado muitas requisições.'
+          );
+          setLoaded(true);
           return;
         }
       }
@@ -127,10 +167,10 @@ export default function Main() {
         alert('Sua sessao expirou! Um novo email sera gerado!');
         localStorage.clear();
       } else {
+        setLoaded(true);
         setTimeout(() => {
           sessionRef.current = session.id;
           emailRef.current = session.address;
-          setLoaded(true);
           handleRefresh();
         }, 100);
         return;
@@ -144,11 +184,14 @@ export default function Main() {
         })
         .then((response) => {
           if (response.status != 200) {
-            alert('Ocorreu um erro! Tente recarregar a pagina!');
+            alert(
+              'Ocorreu um erro! Talvez você tenha solicitado muitas requisições. Tente recarregar a pagina!'
+            );
+            console.log('error');
             return;
           } else {
+            console.log(response);
             if (response.data.data) {
-              console.log(response.data);
               localStorage.setItem(
                 'session',
                 response.data.data.introduceSession.id
@@ -170,21 +213,29 @@ export default function Main() {
     } catch (error) {
       console.log(error);
       alert(
-        'Ocorreu um erro ao gerar o email. Se persistir por favor entre em contato!'
+        'Ocorreu um erro ao gerar o email. Talvez você tenha solicitado muitas requisições. Se persistir por favor entre em contato!'
       );
+      setLoaded(true);
       return;
     }
   }, [currentDate, endpoint, handleRefresh]);
 
   useEffect(() => {
-    generateEmail();
-  }, []);
+    if (!loaded) generateEmail();
+  }, [loaded]);
 
   useEffect(() => {
     startCountdown(15);
   }, []);
 
   useEffect(() => {
+    notifier.on('click', function (notifierObject, options, event) {
+      // Triggers if `wait: true` and user clicks notification
+    });
+
+    notifier.on('timeout', function (notifierObject, options) {
+      // Triggers if `wait: true` and notification closes
+    });
     if (document != null || document != undefined) {
       const handleResize = () => {
         if (window.innerWidth < 770) {
@@ -214,32 +265,33 @@ export default function Main() {
   return (
     <>
       <section className="bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 h-screen m-0">
-        <div className="max-w-2xl xl:max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="max-w-2xl md:max-w-7xl mx-auto px-4 sm:px-6">
           <div className="">
             <div className="grid pt-5 mb-5">
               <span className="text-center justify-center">
-                Seu email temporario
+                Seu email temporário
               </span>
               <div
-                onMouseOver={() => setShowCopy(true)}
-                onMouseLeave={() => setShowCopy(false)}
+                onMouseOver={() => {
+                  emailRef.current && setShowCopy(true);
+                }}
+                onMouseLeave={() => {
+                  emailRef.current && setShowCopy(false);
+                }}
                 onClick={() => {
                   if (emailRef.current) {
                     navigator.clipboard.writeText(emailRef.current);
                     setCopied(true);
-                  } else {
-                    alert(
-                      'Erro ao copiar. Se o problema persistir por favor entre em contato'
-                    );
-                    return;
                   }
                 }}
-                className="cursor-pointer w-fit mx-auto text-center grid relative"
+                className={`${
+                  emailRef.current && 'cursor-pointer'
+                } w-fit mx-auto text-center grid relative`}
               >
                 <h1
                   className={`${
                     copied ? 'text-indigo-600' : 'text-blue-500'
-                  } md:text-gray-100 h1 flex`}
+                  } md:text-gray-100 md:text-4xl font-extrabold leading-tight tracking-tighter text-2xl flex`}
                 >
                   {emailRef.current ? emailRef.current : <Loading />}
                   <svg
@@ -247,7 +299,9 @@ export default function Main() {
                     viewBox="0 0 15 15"
                     height="1em"
                     width="1em"
-                    className="w-6 h-6 md:hidden"
+                    className={`w-6 h-6 ${
+                      emailRef.current ? 'contents' : 'hidden'
+                    }`}
                   >
                     <path
                       fill="currentColor"
@@ -269,8 +323,29 @@ export default function Main() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 w-full">
               <div className="md:col-span-1 flex justify-between w-full bg-gray-500 text-gray-100 p-2 rounded-tl-xl rounded-tr-xl md:rounded-tr-none md:border-r md:border-solid">
-                <span className=" text-xl">Inbox</span>
-                <div className="flex">
+                <span className="flex text-xl items-center">
+                  Inbox
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="w-5 h-5 ml-2 cursor-pointer"
+                    onClick={() => {
+                      handleNotificatinons({
+                        headerSubject: 'Teste',
+                        text: 'test',
+                      });
+                    }}
+                  >
+                    <path d="M5.85 3.5a.75.75 0 00-1.117-1 9.719 9.719 0 00-2.348 4.876.75.75 0 001.479.248A8.219 8.219 0 015.85 3.5zM19.267 2.5a.75.75 0 10-1.118 1 8.22 8.22 0 011.987 4.124.75.75 0 001.48-.248A9.72 9.72 0 0019.266 2.5z" />
+                    <path
+                      fillRule="evenodd"
+                      d="M12 2.25A6.75 6.75 0 005.25 9v.75a8.217 8.217 0 01-2.119 5.52.75.75 0 00.298 1.206c1.544.57 3.16.99 4.831 1.243a3.75 3.75 0 107.48 0 24.583 24.583 0 004.83-1.244.75.75 0 00.298-1.205 8.217 8.217 0 01-2.118-5.52V9A6.75 6.75 0 0012 2.25zM9.75 18c0-.034 0-.067.002-.1a25.05 25.05 0 004.496 0l.002.1a2.25 2.25 0 11-4.5 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </span>
+                <div className="flex items-center">
                   <span className="contents md:hidden">
                     Atualizacao em {counter}
                   </span>
@@ -300,7 +375,7 @@ export default function Main() {
                   Atualizacao automatica em {counter}
                   <Loading />
                   <div
-                    className="flex"
+                    className="flex cursor-pointer"
                     onClick={() => {
                       handleRefresh();
                       startCountdown(15);
@@ -322,34 +397,59 @@ export default function Main() {
                   </div>
                 </div>
               </div>
-              <div className="md:col-span-1 grid bg-gray-600 h-[400px] md:h-[700px]">
-                <div
-                  onClick={() => {
-                    !disableClick && setOpenEmail(true);
-                  }}
-                  className="grid h-fit border-y border-solid"
-                >
-                  <span className="text-blue-300 uppercase font-bold ">
-                    From
-                  </span>
-                  <span>Title</span>
-                  <span className="overflow-hidden truncate w-5/6">
-                    Contentasd adsudahu dhaiasdasdas dasdasd sudhapuhd apiud
-                    hapsiud hauhd as
-                  </span>
-                </div>
-              </div>
-              {openEmail && enableModal && (
-                <Mail showMail={openEmail} hideMail={hideMail} />
+              {mailList.current ? (
+                <>
+                  <div className="md:col-span-1 grid bg-gray-600 h-full md:h-full">
+                    <div>
+                      {mailList.current?.map((mail: MailData, i) => (
+                        <>
+                          <div
+                            onClick={() => {
+                              !disableClick && setOpenEmail(true);
+                              setMailSelected(i);
+                            }}
+                            className="grid h-fit border-y border-solid p-2 cursor-pointer"
+                            key={i}
+                          >
+                            <span className="text-blue-300 uppercase font-bold overflow-hidden truncate w-5/6">
+                              {mail.fromAddr}
+                            </span>
+                            <span className="overflow-hidden truncate w-5/6">
+                              {mail.headerSubject}
+                            </span>
+                            <span className="overflow-hidden truncate w-5/6">
+                              {mail.text}
+                            </span>
+                          </div>
+                        </>
+                      ))}
+                    </div>
+                  </div>
+                  {openEmail && enableModal && (
+                    <Mail
+                      showMail={openEmail}
+                      hideMail={hideMail}
+                      mailData={mailList.current[mailSelected]}
+                    />
+                  )}
+                  <div className="md:col-span-2 hidden md:grid bg-gray-100 h-[400px] md:h-[500px] border-l border-solid">
+                    <div className="p-10 overflow-auto">
+                      <span className="text-black text-2xl">
+                        {mailList.current[mailSelected].headerSubject}
+                      </span>
+                      <p className="text-black text-xl w-[90%] text-ellipsis overflow-x-hidden hover:overflow-x-visible">
+                        {mailList.current[mailSelected].text}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="bg-gray-100 col-span-3 text-gray-900 text-center p-2">
+                    Nenhum email encontrado
+                  </div>
+                </>
               )}
-              <div className="md:col-span-2 hidden md:grid bg-gray-100 h-[500px] md:h-[700px] border-l border-solid">
-                <div className="p-10 overflow-auto">
-                  <span className="text-black text-2xl">Title</span>
-                  <p className="text-black text-xl w-[90%] text-ellipsis overflow-x-hidden hover:overflow-x-visible">
-                    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-                  </p>
-                </div>
-              </div>
             </div>
             <div className="max-w-sm mx-auto">
               <div className="flex items-center my-6">
