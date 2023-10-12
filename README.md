@@ -8,7 +8,8 @@
 
 Gerar emails temporários para cadastro em sites e/ou recebimento para pessoas exigêntes com seguraça e anonimato.
 
-[Acessar apresentação](https://coodesh.dbug.me)
+[Acessar apresentação](https://www.loom.com/share/ffad441da0c14826885be6b6e50bbada?sid=30ab44ff-1907-43be-9f6d-204545930fc6)
+[Acessar o projeto]('https://coodesh.dbug.me')
 
 ## Tecnologias usadas
 
