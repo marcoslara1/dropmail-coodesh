@@ -1,9 +1,5 @@
-export {}
-
-declare module 'flowbite/plugin'
+export {};
 
 declare global {
-    interface Window {
-        recaptchaVerifier: any // 👈️ turn off type checking
-    }
+  interface Window {}
 }
