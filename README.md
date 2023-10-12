@@ -127,4 +127,4 @@ Marcos Lara
 - [Email](marcos.lara1@icloud.com)
 - [LinkedIn](https://www.linkedin.com/in/marcos-lara-933303168/)
 
-- > This is a challenge by [Coodesh](http://localhost:3000)
+> This is a challenge by [Coodesh](http://localhost:3000)
