@@ -3,7 +3,6 @@ import Image from 'next/image';
 import Loading from './Loading';
 import Mail from './Mail';
 import axios from 'axios';
-import Logo from '@/public/logo.png';
 
 let timerInterval: NodeJS.Timeout;
 
