@@ -67,7 +67,7 @@ export default function MyModal({ hideMail, showMail, mailData }: ModalProps) {
                     )}
                   </Dialog.Title>
                   <div className="mt-2">
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 whitespace-pre-line">
                       {mailData?.text ? mailData?.text : <>{`<SEM CORPO>`}</>}
                     </p>
                   </div>
