@@ -17,7 +17,6 @@ Gerar emails temporários para cadastro em sites e/ou recebimento para pessoas e
 - Heoicons (icons SVG)
 - Headlessui (modal/transitions)
 - Next-seo (SEO)
-- Node-notifier (notifications)
 
 ## Inspiraçāo
 
