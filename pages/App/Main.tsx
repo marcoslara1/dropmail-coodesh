@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Loading from './Loading';
 import Mail from './Mail';
 import axios from 'axios';
+import Router from 'next/router';
 
 let timerInterval: NodeJS.Timeout;
 
@@ -443,7 +444,7 @@ export default function Main() {
               </div>
               {mailList.current ? (
                 <>
-                  <div className="md:col-span-1 grid bg-gray-600 h-full md:h-full">
+                  <div className="md:col-span-1 grid bg-gray-600 h-full md:h-full overflow-y-scroll">
                     <div>
                       {mailList.current?.map((mail: MailData, i) => (
                         <>
@@ -501,7 +502,16 @@ export default function Main() {
                   className="border-t border-gray-300 grow mr-3"
                   aria-hidden="true"
                 ></div>
-                <div className="text-gray-600 italic">GITHUB</div>
+                <div
+                  onClick={() => {
+                    window.open(
+                      'https://github.com/marcoslara1/dropmail-coodesh'
+                    );
+                  }}
+                  className="text-gray-600 italic cursor-pointer"
+                >
+                  GITHUB
+                </div>
                 <div
                   className="border-t border-gray-300 grow ml-3"
                   aria-hidden="true"
