@@ -162,10 +162,7 @@ module.exports = {
         },
     },
     plugins: [
-        require('flowbite/plugin'),
         require('@headlessui/tailwindcss'),
-
-        // Or with a custom prefix:
         require('@headlessui/tailwindcss')({ prefix: 'ui' }),
         require('@tailwindcss/forms'),
     ],

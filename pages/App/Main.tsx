@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Loading from './Loading';
-import { Dialog } from '@headlessui/react';
 import Mail from './Mail';
 import axios from 'axios';
-import path from 'path';
-import notifier from 'node-notifier';
 
 let timerInterval: NodeJS.Timeout;
 
@@ -30,8 +27,6 @@ type Notification = {
   text: string | null;
 };
 
-export const revalidate = 600;
-
 export default function Main() {
   const [showCopy, setShowCopy] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -41,6 +36,7 @@ export default function Main() {
   const [disableClick, setDisableClick] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [mailSelected, setMailSelected] = useState(0);
+  const [mobile, setMobile] = useState(false);
 
   const sessionRef = useRef<string | null>();
   const emailRef = useRef<string | null>();
@@ -63,7 +59,7 @@ export default function Main() {
 
     timerInterval = setInterval(() => {
       if (timeLeft <= 0) {
-        handleRefresh();
+        // handleRefresh();
         clearInterval(timerInterval);
         startCountdown(15);
       } else {
@@ -74,19 +70,28 @@ export default function Main() {
   };
 
   const handleNotificatinons = async (data: Notification) => {
-    if (!Notification) {
-      console.log('Notificações não disponíveis.');
-      return;
-    }
-    if (Notification.permission !== 'granted') {
-      Notification.requestPermission();
-    } else {
-      try {
-        await axios.post('/api/notifications', data);
-      } catch (error) {
-        console.log(error);
+    if (
+      navigator.userAgent.match(/Macintosh/i) ||
+      navigator.userAgent.match(/Windows/i)
+    ) {
+      if (!Notification) {
+        console.log('Notificações não disponíveis.');
         return;
       }
+      if (Notification.permission !== 'granted') {
+        Notification.requestPermission();
+        return;
+      } else {
+        try {
+          await axios.post('/api/notifications', data);
+          return;
+        } catch (error) {
+          console.log(error);
+          return;
+        }
+      }
+    } else {
+      setMobile(true);
     }
   };
 
@@ -171,45 +176,42 @@ export default function Main() {
         setTimeout(() => {
           sessionRef.current = session.id;
           emailRef.current = session.address;
-          handleRefresh();
+          // handleRefresh();
         }, 100);
         return;
       }
     }
     try {
-      await axios
-        .post(endpoint, {
-          query:
-            'mutation {introduceSession {id, expiresAt, addresses {address}}}',
-        })
-        .then((response) => {
-          if (response.status != 200) {
-            alert(
-              'Ocorreu um erro! Talvez você tenha solicitado muitas requisições. Tente recarregar a pagina!'
-            );
-            console.log('error');
-            return;
-          } else {
-            console.log(response);
-            if (response.data.data) {
-              localStorage.setItem(
-                'session',
-                response.data.data.introduceSession.id
-              );
-              localStorage.setItem(
-                'address',
-                response.data.data.introduceSession.addresses[0].address
-              );
-              localStorage.setItem(
-                'expire',
-                response.data.data.introduceSession.expiresAt
-              );
-              emailRef.current =
-                response.data.data.introduceSession.addresses[0].address;
-              setLoaded(true);
-            }
-          }
-        });
+      const response = await axios.post(endpoint, {
+        query:
+          'mutation {introduceSession {id, expiresAt, addresses {address}}}',
+      });
+      if (response.status != 200) {
+        alert(
+          'Ocorreu um erro! Talvez você tenha solicitado muitas requisições. Tente recarregar a pagina!'
+        );
+        console.log('error');
+        return;
+      } else {
+        console.log(response);
+        if (response.data.data) {
+          localStorage.setItem(
+            'session',
+            response.data.data.introduceSession.id
+          );
+          localStorage.setItem(
+            'address',
+            response.data.data.introduceSession.addresses[0].address
+          );
+          localStorage.setItem(
+            'expire',
+            response.data.data.introduceSession.expiresAt
+          );
+          emailRef.current =
+            response.data.data.introduceSession.addresses[0].address;
+          setLoaded(true);
+        }
+      }
     } catch (error) {
       console.log(error);
       alert(
@@ -229,13 +231,14 @@ export default function Main() {
   }, []);
 
   useEffect(() => {
-    notifier.on('click', function (notifierObject, options, event) {
-      // Triggers if `wait: true` and user clicks notification
-    });
-
-    notifier.on('timeout', function (notifierObject, options) {
-      // Triggers if `wait: true` and notification closes
-    });
+    if (
+      navigator.userAgent.match(/Macintosh/i) ||
+      navigator.userAgent.match(/Windows/i)
+    ) {
+      setMobile(false);
+    } else {
+      setMobile(true);
+    }
     if (document != null || document != undefined) {
       const handleResize = () => {
         if (window.innerWidth < 770) {
@@ -315,35 +318,49 @@ export default function Main() {
             </div>
             <div className="w-fit mx-auto text-center grid absolute -translate-x-[50%] left-[50%] -mt-3 z-10">
               {showCopy && !copied && (
-                <Image width={96} height={64} src="/copy.png" alt="copy" />
+                <Image
+                  width={96}
+                  height={64}
+                  src="/copy.png"
+                  alt="copy"
+                  priority
+                />
               )}
               {showCopy && copied && (
-                <Image width={96} height={64} src="/copied.png" alt="copy" />
+                <Image
+                  width={96}
+                  height={64}
+                  src="/copied.png"
+                  alt="copy"
+                  priority
+                />
               )}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 w-full">
               <div className="md:col-span-1 flex justify-between w-full bg-gray-500 text-gray-100 p-2 rounded-tl-xl rounded-tr-xl md:rounded-tr-none md:border-r md:border-solid">
                 <span className="flex text-xl items-center">
                   Inbox
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="w-5 h-5 ml-2 cursor-pointer"
-                    onClick={() => {
-                      handleNotificatinons({
-                        headerSubject: 'Teste',
-                        text: 'test',
-                      });
-                    }}
-                  >
-                    <path d="M5.85 3.5a.75.75 0 00-1.117-1 9.719 9.719 0 00-2.348 4.876.75.75 0 001.479.248A8.219 8.219 0 015.85 3.5zM19.267 2.5a.75.75 0 10-1.118 1 8.22 8.22 0 011.987 4.124.75.75 0 001.48-.248A9.72 9.72 0 0019.266 2.5z" />
-                    <path
-                      fillRule="evenodd"
-                      d="M12 2.25A6.75 6.75 0 005.25 9v.75a8.217 8.217 0 01-2.119 5.52.75.75 0 00.298 1.206c1.544.57 3.16.99 4.831 1.243a3.75 3.75 0 107.48 0 24.583 24.583 0 004.83-1.244.75.75 0 00.298-1.205 8.217 8.217 0 01-2.118-5.52V9A6.75 6.75 0 0012 2.25zM9.75 18c0-.034 0-.067.002-.1a25.05 25.05 0 004.496 0l.002.1a2.25 2.25 0 11-4.5 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  {!mobile && (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="w-5 h-5 ml-2 cursor-pointer"
+                      onClick={() => {
+                        handleNotificatinons({
+                          headerSubject: 'Teste',
+                          text: 'test',
+                        });
+                      }}
+                    >
+                      <path d="M5.85 3.5a.75.75 0 00-1.117-1 9.719 9.719 0 00-2.348 4.876.75.75 0 001.479.248A8.219 8.219 0 015.85 3.5zM19.267 2.5a.75.75 0 10-1.118 1 8.22 8.22 0 011.987 4.124.75.75 0 001.48-.248A9.72 9.72 0 0019.266 2.5z" />
+                      <path
+                        fillRule="evenodd"
+                        d="M12 2.25A6.75 6.75 0 005.25 9v.75a8.217 8.217 0 01-2.119 5.52.75.75 0 00.298 1.206c1.544.57 3.16.99 4.831 1.243a3.75 3.75 0 107.48 0 24.583 24.583 0 004.83-1.244.75.75 0 00.298-1.205 8.217 8.217 0 01-2.118-5.52V9A6.75 6.75 0 0012 2.25zM9.75 18c0-.034 0-.067.002-.1a25.05 25.05 0 004.496 0l.002.1a2.25 2.25 0 11-4.5 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  )}
                 </span>
                 <div className="flex items-center">
                   <span className="contents md:hidden">

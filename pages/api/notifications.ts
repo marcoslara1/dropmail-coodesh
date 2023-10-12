@@ -1,5 +1,6 @@
 import notifier from 'node-notifier';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import open from 'open';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method != 'POST') {
@@ -26,6 +27,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       // Response is response from notification
       // Metadata contains activationType, activationAt, deliveredAt
       console.log(err, response, metadata);
+      return;
     }
   );
 
@@ -34,6 +36,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     function (notifierObject: any, options: any, event: any) {
       // Triggers if `wait: true` and user clicks notification
       console.log(notifierObject, options, event);
+      open('http://localhost:3000');
+      return;
     }
   );
 
@@ -42,4 +46,5 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     console.log(notifierObject, options);
   });
   res.status(200);
+  return;
 }
