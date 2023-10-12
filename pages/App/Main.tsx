@@ -88,7 +88,6 @@ export default function Main() {
           await axios.post('/api/notifications', data);
           return;
         } catch (error) {
-          console.log(error);
           return;
         }
       }
@@ -176,7 +175,6 @@ export default function Main() {
           setLoaded(true);
           return;
         } catch (error) {
-          console.log(error);
           alert(
             'Um erro ocorreu ao localizar seus emails! Talvez você tenha solicitado muitas requisições.'
           );
@@ -224,7 +222,6 @@ export default function Main() {
         console.log('error');
         return;
       } else {
-        console.log(response);
         if (response.data.data) {
           localStorage.setItem(
             'session',
@@ -244,7 +241,6 @@ export default function Main() {
         }
       }
     } catch (error) {
-      console.log(error);
       alert(
         'Ocorreu um erro ao gerar o email. Talvez você tenha solicitado muitas requisições. Se persistir por favor entre em contato!'
       );
