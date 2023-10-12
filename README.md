@@ -36,6 +36,8 @@ Antes de começar, verifique se você atendeu aos seguintes requisitos:
 
 ## Como rodar
 
+# NA LINHA 47 DE MAIN.TSX ALTERE O TOKEN PARA O QUE DESEJAR
+
 Clone este repositório e em seu IDE ou onde ficou salvo siga as intruções abaixo
 
 Para instalar as dependências rode o seguinte comando
